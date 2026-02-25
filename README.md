@@ -1,6 +1,8 @@
 #  EasyCRUD – Full Stack Application Deployment
 EasyCRUD is a full-stack CRUD (Create, Read, Update, Delete) application deployed using **Amazon RDS**, **EC2**, **Docker** and **AWS EKS**.  
 The backend is developed using **Spring Boot**, the frontend uses **React + Nginx/httpd**, and the database runs on **MariaDB (RDS)**.
+This project demonstrates **containerization with Docker**, **Kubernetes orchestration on AWS EKS**, **managed database integration with Amazon RDS**, and a **scalable microservices architecture**.
+
 
 
 ---
@@ -22,7 +24,7 @@ The backend is developed using **Spring Boot**, the frontend uses **React + Ngin
 - AWS Account
 - Ubuntu EC2 Instance
 - Amazon RDS (MariaDB)
-- Git installed
+- AWS EKS (Kubernetes)
 - Docker installed
 - Required ports open in Security Groups:
   - `22` (SSH)
@@ -32,6 +34,9 @@ The backend is developed using **Spring Boot**, the frontend uses **React + Ngin
 
 ---
 
+# 🔹 PHASE 0: Create AWS EKS Cluster 
+Follow the complete database setup guide (**Step 1 to Step 6**) here:
+[AWS EKS Setup Documentation](https://github.com/mhprasanna-spec/Kubernetes.git)
 
 # 🔹 PHASE 1: Database Setup (Amazon RDS – MariaDB)
 
@@ -418,6 +423,7 @@ http://<frontend_EXTERNAL-IP>
 ```
 mysql -h <RDS_Endpoint> -u <username> -p<password> 
 ```
+
 
 
 

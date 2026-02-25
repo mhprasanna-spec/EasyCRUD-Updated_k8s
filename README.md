@@ -412,11 +412,12 @@ http://<frontend_EXTERNAL-IP>
 
 🎉 **EasyCRUD application is live and fully functional!**
 
-**enter the values on the portal the verify it by login into the RDS database**
+**Enter the values through the application portal and verify the data by logging into the RDS database**
 
 ```
 mysql -h <RDS_Endpoint> -u <username> -p<password> 
 ```
+
 
 
 

@@ -147,7 +147,7 @@ git clone https://github.com/mhprasanna-spec/EasyCRUD-Updated_k8s.git
 ```
 Move to backend directory
 ```bash
-cd EasyCRUD/backend/
+cd EasyCRUD-Updated_k8s/backend/
 ```
 
 ## Step 9: Configure Backend Application
@@ -199,7 +199,7 @@ CMD ["student-registration-backend-0.0.1-SNAPSHOT.jar"]
 
 Build the Docker image for the backend application and verify the image creation.
 ```bash
-docker build -t <images-name>:<tag> <dockerfile-path>
+docker build <dockerfile-path> -t <dockerhub_username>/<images-name>:<tag>
 ```
 Example :
 ```bash
@@ -253,19 +253,24 @@ spec:
    - port: 8080
      targetPort: 8080
 ```
-
-
-## Step 13: Verify Backend
-
-Verify that the backend application is running successfully.
-
-Open a browser and navigate to: 
-```bash
-http://<EC2_PUBLIC_IP>:8080
+run the service file
 ```
+kubectl apply -f backend-svc.yaml
+```
+verify service file is running 
+```
+kubectl get svc
+```
+there will be something like this
+```
+NAME           TYPE           CLUSTER-IP     EXTERNAL-IP                                                               PORT(S)          AGE
+backend-svc    LoadBalancer   10.100.66.93   a6ccb85bab6c54d1bb2891463fba43b2-2080745944.us-east-1.elb.amazonaws.com   8080:32297/TCP   6m3s
+```
+note the EXternal-ip which will be used in frontend (in .env file)
+
 ✅ **Backend deployed successfully**
 
-# 🔹 PHASE 3: Frontend Deployment (Docker + Nginx)
+# 🔹 PHASE 3: Frontend Deployment 
 
 ## Step 14: Navigate to Frontend Directory
 
@@ -289,6 +294,10 @@ Update the value as shown below:
 ```bash
 VITE_API_URL=http://<BACKEND_PUBLIC_IP>:8080/api
 ```
+example:
+```
+VITE_API_URL=http://a6ccb85bab6c54d1bb2891463fba43b2-2080745944.us-east-1.elb.amazonaws.com:8080/api
+```
 ## Step 16: Create Frontend Dockerfile
 
 Create a Dockerfile for the frontend application.
@@ -298,37 +307,93 @@ nano Dockerfile
 ```
 Add the following content to the Dockerfile:
 ```bash
-FROM node:25-alpine
+FROM node:24-alpine
 COPY . /opt/
 WORKDIR /opt
-RUN npm install
-RUN npm run build
+RUN npm install && npm run build
 RUN apk update && apk add apache2
-RUN cp -rf dist/* /var/www/localhost/htdocs/
+RUN rm -rf /var/www/localhost/htdocs/*
+RUN cp -rf dist/* /var/www/localhost/htdocs
 EXPOSE 80
-CMD ["httpd","-D","FOREGROUND"]
+ENTRYPOINT ["httpd","-D","FOREGROUND"]
 ```
 ## Step 17: Build Frontend Docker Image
 
 Build the Docker image for the frontend application .
 
 ```bash
-docker build -t frontend:v1 .
+docker build . -t prasanna369/easy-frontend:v2
 ```
 verify the image creation
 ```bash
 docker images
 ```
-## Step 18: Run Frontend Container
+push the image to the docker hub
+```
+docker push prasanna369/easy-frontend:v2
+```
 
-Run the frontend Docker container.
+## Step 18: Create frontend Deployement+Service Manifest:
+
+create the Deployment file frontend-deploy.yml.
 
 ```bash
-docker run -d -p 80:80 frontend:v1
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+    name: frontend 
+    labels:
+       app: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      name: frontend
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: prasanna369/easy-frontend:v2
+          ports:
+            - containerPort: 80
+```
+Run the file
+```
+kubectl apply -f frontend-deploy.yml
 ```
 verify that it is running
 ```bash
-docker ps
+kubectl get pods
+```
+create the service file frontend-svc.yml
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+```
+
+verify the service file 
+```
+kubectl get svc
+```
+output is something like this
+```
+NAME           TYPE           CLUSTER-IP     EXTERNAL-IP                                                               PORT(S)          AGE
+backend-svc    LoadBalancer   10.100.66.93   a6ccb85bab6c54d1bb2891463fba43b2-2080745944.us-east-1.elb.amazonaws.com   8080:32297/TCP   6m42s
+frontend-svc   LoadBalancer   10.100.87.52   acd9a5f55b6374087bb94cc42d01efb9-1929408836.us-east-1.elb.amazonaws.com   80:32090/TCP     47s
+kubernetes     ClusterIP      10.100.0.1     <none>                                                                    443/TCP          52m
 ```
 ## Step 19: Verify Frontend
 
@@ -336,8 +401,11 @@ Verify that the frontend application is running successfully.
 
 Open a browser and navigate to:
 ```bash
-http://<EC2_PUBLIC_IP>
+http://<frontend_EXTERNAL-IP>
 ```
 
 🎉 **EasyCRUD application is live and fully functional!**
+
+
+
 

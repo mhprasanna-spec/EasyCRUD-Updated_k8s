@@ -90,7 +90,7 @@ Execute the following SQL commands inside the MySQL shell:
 SHOW DATABASES;
 CREATE DATABASE student_db;
 ```
-change username and passowrd which is given in the RDS database
+change username and passowrd which is given in the RDS database at the time of creation.
 ```
 GRANT ALL PRIVILEGES ON springbackend.* TO 'username'@'localhost' IDENTIFIED BY 'your_password';
 ```
@@ -460,6 +460,7 @@ Check the following:
 ✔ Security Group inbound rules allow database access
 
 ✔ Correct RDS endpoint in application.properties file
+
 
 
 

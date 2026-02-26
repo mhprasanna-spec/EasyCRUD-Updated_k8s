@@ -465,5 +465,50 @@ Check the following:
 
 
 
+## Additional --> Use Ingres
 
+create ingres file by using path based routing
+```
+vim ingres-path.yaml
+```
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  annotations:
+    # Essential for NGINX to handle the routing
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx  # Must match your IngressClass name
+  rules:
+  - http:
+      paths:
+      # 1. Backend Service Route
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-svc
+            port:
+              number: 8080 # Matches your backend-svc port
 
+      # 2. Frontend Service Route (Catch-all)
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80 # Matches your frontend-svc port
+```
+
+run this file
+```
+kubectl apply -f ingres-path.yaml
+```
+verify 
+
+```
+kubectl get ing
+```

@@ -1,16 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: easycrud-backend
+  name: backend-deployment
+  labels:
+    app: backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: easycrud-backend
+      app: backend
   template:
     metadata:
       labels:
-        app: easycrud-backend
+        app: backend
     spec:
       containers:
       - name: backend

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: easycrud-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: easycrud-frontend
+  template:
+    metadata:
+      labels:
+        app: easycrud-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: prasanna369/easycrud1-jenkins:frontend
+        ports:
+        - containerPort: 80

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: easycrud-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: easycrud-backend
+  template:
+    metadata:
+      labels:
+        app: easycrud-backend
+    spec:
+      containers:
+      - name: backend
+        image: prasanna369/easycrud1-jenkins:backend
+        ports:
+        - containerPort: 8080

@@ -1,16 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: easycrud-frontend
+  name: frontend-deployment
+  labels:
+    app: frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: easycrud-frontend
+      app: frontend
   template:
     metadata:
       labels:
-        app: easycrud-frontend
+        app: frontend
     spec:
       containers:
       - name: frontend

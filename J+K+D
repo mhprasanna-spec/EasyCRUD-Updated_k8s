@@ -1,0 +1,96 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_USER = "prasanna369"
+        KUBECONFIG_CREDENTIAL_ID = 'kubeconfig-cred' 
+        AWS_CRED_ID = 'ubuntu' 
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git url: "https://github.com/mhprasanna-spec/EasyCRUD-Updated_k8s.git", branch: "main"
+            }
+        }
+
+        stage('Build & Push Backend') {
+            steps {
+                sh "docker build --no-cache -t ${DOCKER_HUB_USER}/easycrud1-jenkins:backend ./backend"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
+                    sh "docker push ${DOCKER_HUB_USER}/easycrud1-jenkins:backend"
+                }
+            }
+        }
+
+        stage('Deploy Backend to K8s') {
+            steps {
+                withKubeConfig([credentialsId: KUBECONFIG_CREDENTIAL_ID]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CRED_ID, accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        
+                        // REMOVE PREVIOUS BACKEND RESOURCES
+                        sh "kubectl delete -f k8s/backend-deployment.yaml --ignore-not-found"
+                        sh "kubectl delete -f k8s/backend-service.yaml --ignore-not-found"
+                        
+                        // CREATE FRESH BACKEND
+                        sh "kubectl apply -f k8s/backend-deployment.yaml"
+                        sh "kubectl apply -f k8s/backend-service.yaml"
+                        
+                        script {
+                            sh "sleep 10" // Wait for ClusterIP assignment
+                            env.BACKEND_CLUSTER_IP = sh(
+                                script: "kubectl get svc backend-service -o jsonpath='{.spec.clusterIP}'",
+                                returnStdout: true
+                            ).trim()
+                            echo "Backend ClusterIP: ${env.BACKEND_CLUSTER_IP}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build & Push Frontend with Backend IP') {
+            steps {
+                script {
+                    sh "echo 'REACT_APP_BACKEND_URL=http://${env.BACKEND_CLUSTER_IP}:8080' > ./frontend/.env"
+                    
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                        sh "docker build --no-cache -t ${DOCKER_HUB_USER}/easycrud1-jenkins:frontend ./frontend"
+                        sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
+                        sh "docker push ${DOCKER_HUB_USER}/easycrud1-jenkins:frontend"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Frontend & Ingress') {
+            steps {
+                withKubeConfig([credentialsId: KUBECONFIG_CREDENTIAL_ID]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: env.AWS_CRED_ID, accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        
+                        // REMOVE PREVIOUS FRONTEND RESOURCES
+                        sh "kubectl delete -f k8s/frontend-deployment.yaml --ignore-not-found"
+                        sh "kubectl delete -f k8s/frontend-service.yaml --ignore-not-found"
+                        sh "kubectl delete -f k8s/ingress.yaml --ignore-not-found"
+                        
+                        // CREATE FRESH FRONTEND
+                        sh "kubectl apply -f k8s/frontend-deployment.yaml"
+                        sh "kubectl apply -f k8s/frontend-service.yaml"
+                        sh "kubectl apply -f k8s/ingress.yaml"
+                        
+                        script {
+                            echo "Waiting for Ingress LoadBalancer..."
+                            sh "sleep 60" 
+                            env.INGRESS_HOST = sh(
+                                script: "kubectl get ingress main-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'",
+                                returnStdout: true
+                            ).trim()
+                            echo "Access your app at: http://${env.INGRESS_HOST}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
